@@ -6,9 +6,11 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -91,6 +93,40 @@ func (id ID) Count() uint32 {
 
 // IsZero returns true if the ObjectID is the Nil value.
 func (id ID) IsZero() bool { return id == Nil }
+
+// MarshalText implements the encoding.TextMarshaler interface.
+// This is useful when using the ID as a map key during JSON marshalling.
+func (id ID) MarshalText() ([]byte, error) {
+	return []byte(id.String()), nil
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+// This is useful when using the ID as a map key during JSON unmarshalling.
+func (id *ID) UnmarshalText(b []byte) error {
+	decoded, err := Decode(string(b))
+	if err != nil {
+		return err
+	}
+	*id = decoded
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (id ID) MarshalJSON() ([]byte, error) {
+	return json.Marshal(id.String())
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (id *ID) UnmarshalJSON(data []byte) error {
+	// remove the surrounding quotes from the JSON string
+	str := strings.Trim(string(data), "\"")
+	decoded, err := Decode(str)
+	if err != nil {
+		return err
+	}
+	*id = decoded
+	return nil
+}
 
 // Decode decodes the string representation and returns the corresponding ID.
 func Decode(s string) (ID, error) {
