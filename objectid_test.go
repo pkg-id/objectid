@@ -172,3 +172,72 @@ func TestID_UnmarshalJSON(t *testing.T) {
 		t.Errorf("Unexpected ID value: got %s, expected %s", obj.ID, expectedID)
 	}
 }
+
+func TestID_Value(t *testing.T) {
+	var id objectid.ID
+	value, err := id.Value()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	vid := value.(string)
+	if vid != id.String() {
+		t.Errorf("Unexpected ID value: got %s, expected %s", vid, id)
+	}
+}
+
+func TestID_Scan(t *testing.T) {
+
+	t.Run("invalid src type", func(t *testing.T) {
+		var id objectid.ID
+		err := id.Scan(1)
+		if err == nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		if id != objectid.Nil {
+			t.Errorf("Unexpected ID value: got %s, expected %s", id, objectid.Nil)
+		}
+	})
+
+	t.Run("invalid format", func(t *testing.T) {
+		var id objectid.ID
+		err := id.Scan("xxx-xxx-xx")
+		if err == nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		if id != objectid.Nil {
+			t.Errorf("Unexpected ID value: got %s, expected %s", id, objectid.Nil)
+		}
+	})
+
+	t.Run("from bytes", func(t *testing.T) {
+		var id objectid.ID
+
+		sid := objectid.New()
+		src := []byte(sid.String())
+		err := id.Scan(src)
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		if id != sid {
+			t.Errorf("Unexpected ID value: got %s, expected %s", id, sid)
+		}
+	})
+
+	t.Run("from string", func(t *testing.T) {
+		var id objectid.ID
+
+		sid := objectid.New()
+		err := id.Scan(sid.String())
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		if id != sid {
+			t.Errorf("Unexpected ID value: got %s, expected %s", id, sid)
+		}
+	})
+}

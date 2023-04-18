@@ -4,6 +4,7 @@ package objectid
 
 import (
 	"crypto/rand"
+	"database/sql/driver"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -126,6 +127,33 @@ func (id *ID) UnmarshalJSON(data []byte) error {
 	}
 	*id = decoded
 	return nil
+}
+
+// Value implements the driver.Valuer.
+func (id ID) Value() (driver.Value, error) {
+	return driver.Value(id.String()), nil
+}
+
+// Scan implements the sql.Scanner
+func (id *ID) Scan(src any) error {
+	if src == nil {
+		*id = Nil
+		return nil
+	}
+
+	var s string
+	switch t := src.(type) {
+	default:
+		return fmt.Errorf("objectid: scan: unsuported source type: %T", t)
+	case []byte:
+		s = string(t)
+	case string:
+		s = t
+	}
+
+	oid, err := Decode(s)
+	*id = oid
+	return err
 }
 
 // Decode decodes the string representation and returns the corresponding ID.
